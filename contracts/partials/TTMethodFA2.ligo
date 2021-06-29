@@ -1,7 +1,3 @@
-(* Helper function to get allowance for an account *)
-function get_allowance (const owner_account : account_info; const spender : address; const s : dex_storage) : bool is
-  owner_account.allowances contains spender
-
 (* Perform transfers from one owner *)
 [@inline] function iterate_transfer (const s : dex_storage; const user_trx_params : transfer_param) : dex_storage is
   block {
@@ -84,8 +80,8 @@ function transfer (const p : token_action; var s : dex_storage; const this : add
     | ITransfer(params) -> {
       s := List.fold(iterate_transfer, params, s);
     }
-    | IBalance_of(params) -> skip
-    | IUpdate_operators(params) -> skip
+    | IBalance_of(_) -> skip
+    | IUpdate_operators(_) -> skip
     end
   } with (operations, s)
 
@@ -93,7 +89,7 @@ function get_balance_of (const p : token_action; const s : dex_storage; const th
   block {
     var operations: list(operation) := list[];
     case p of
-    | ITransfer(params) -> skip
+    | ITransfer(_) -> skip
     | IBalance_of(balance_params) -> {
       (* Perform single balance lookup *)
       function look_up_balance(const l: list (balance_of_response); const request : balance_of_request) : list (balance_of_response) is
@@ -112,7 +108,7 @@ function get_balance_of (const p : token_action; const s : dex_storage; const th
       const accumulated_response : list (balance_of_response) = List.fold(look_up_balance, balance_params.requests, (nil: list(balance_of_response)));
       operations := list[Tezos.transaction(accumulated_response, 0mutez, balance_params.callback)];
     }
-    | IUpdate_operators(params) -> skip
+    | IUpdate_operators(_) -> skip
     end
   } with (operations, s)
 
