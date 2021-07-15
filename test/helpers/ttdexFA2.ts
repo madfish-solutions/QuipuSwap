@@ -294,6 +294,7 @@ export class TTDex extends TokenFA2 {
         "invest",
         pair.token_a_address,
         pair.token_a_id,
+        minShares,
         standard.toLowerCase() == "mixed" ? "fa2" : standard.toLowerCase(),
         null,
         pair.token_b_address,
@@ -301,8 +302,7 @@ export class TTDex extends TokenFA2 {
         standard.toLowerCase() == "mixed" ? "fa12" : standard.toLowerCase(),
         null,
         tokenAAmount,
-        tokenBAmount,
-        minShares
+        tokenBAmount
       )
       .send();
     await confirmOperation(tezos, operation.hash);

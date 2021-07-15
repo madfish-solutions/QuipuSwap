@@ -90,10 +90,19 @@ type token_to_token_route_params is
     receiver              : address; (* tokens receiver *)
   ]
 
+type initialize_params is
+  [@layout:comb]
+  record [
+    pair            : tokens_info; (* exchange pair info *)
+    token_a_in      : nat; (* min amount of tokens A invested  *)
+    token_b_in      : nat; (* min amount of tokens B invested *)
+  ]
+
 type invest_liquidity_params is
   [@layout:comb]
   record [
     pair            : tokens_info; (* exchange pair info *)
+    shares          : nat; (* the amount of shares to receive *)
     token_a_in      : nat; (* min amount of tokens A invested  *)
     token_b_in      : nat; (* min amount of tokens B invested *)
   ]
@@ -108,7 +117,7 @@ type divest_liquidity_params is
   ]
 
 type dex_action is
-| AddPair                 of invest_liquidity_params  (* sets initial liquidity *)
+| AddPair                 of initialize_params  (* sets initial liquidity *)
 | Swap                    of token_to_token_route_params  (* exchanges token to another token and sends them to receiver *)
 | Invest                  of invest_liquidity_params  (* mints min shares after investing tokens *)
 | Divest                  of divest_liquidity_params  (* burns shares and sends tokens to the owner *)

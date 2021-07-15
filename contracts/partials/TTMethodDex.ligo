@@ -185,6 +185,17 @@ function typed_transfer(
         contract_address)
     end;
 
+(* Helper function to transfer the asset based on its standard *)
+function check_token_id(
+  const token_id : nat;
+  const standard: token_type) : unit is
+    case standard of
+      Fa12 -> if token_id = 0n
+        then unit
+        else (failwith("Dex/non-zero-token-id") : unit)
+    | Fa2 -> unit
+    end;
+
 #include "../partials/TTMethodFA2.ligo"
 
 (* Initialize exchange after the previous liquidity was drained *)
@@ -206,6 +217,10 @@ function initialize_exchange(
         then failwith("Dex/wrong-token-id") else skip;
         if params.pair.token_a_address > params.pair.token_b_address
         then failwith("Dex/wrong-pair") else skip;
+
+        (* check fa1.2 token ids *)
+        check_token_id(params.pair.token_a_id, params.pair.token_a_type);
+        check_token_id(params.pair.token_b_id, params.pair.token_b_type);
 
         (* read pair info*)
         const res : (pair_info * nat) = get_pair(params.pair, s);
@@ -468,29 +483,19 @@ function invest_liquidity(
         if pair.token_a_pool * pair.token_b_pool = 0n
         then failwith("Dex/not-launched") else skip;
 
-        (* calculate purchased tokens *)
-        const shares_a_purchased : nat =
-          params.token_a_in * pair.total_supply / pair.token_a_pool;
-        const shares_b_purchased : nat =
-          params.token_b_in * pair.total_supply / pair.token_b_pool;
-        const shares_purchased : nat =
-          if shares_a_purchased < shares_b_purchased
-          then shares_a_purchased
-          else shares_b_purchased;
-
         (* ensure purchsed shares satisfy required minimum *)
-        if shares_purchased = 0n
+        if params.shares = 0n
         then failwith("Dex/wrong-params") else skip;
 
         (* calculate tokens to be withdrawn *)
         const tokens_a_required : nat =
-          shares_purchased * pair.token_a_pool / pair.total_supply;
-        if shares_purchased * pair.token_a_pool >
+          params.shares * pair.token_a_pool / pair.total_supply;
+        if params.shares * pair.token_a_pool >
           tokens_a_required * pair.total_supply
         then tokens_a_required := tokens_a_required + 1n else skip;
         const tokens_b_required : nat =
-          shares_purchased * pair.token_b_pool / pair.total_supply;
-        if shares_purchased * pair.token_b_pool >
+          params.shares * pair.token_b_pool / pair.total_supply;
+        if params.shares * pair.token_b_pool >
           tokens_b_required * pair.total_supply
         then tokens_b_required := tokens_b_required + 1n else skip;
 
@@ -508,7 +513,7 @@ function invest_liquidity(
         const share : nat = account.balance;
 
         (* update user's shares *)
-        account.balance := share + shares_purchased;
+        account.balance := share + params.shares;
         s.ledger[(Tezos.sender, token_id)] := account;
 
         (* update reserves *)
@@ -516,7 +521,7 @@ function invest_liquidity(
         pair.token_b_pool := pair.token_b_pool + tokens_b_required;
 
         (* update total number of shares *)
-        pair.total_supply := pair.total_supply + shares_purchased;
+        pair.total_supply := pair.total_supply + params.shares;
         s.pairs[token_id] := pair;
 
         (* prepare operations to get initial liquidity *)

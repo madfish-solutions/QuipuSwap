@@ -104,21 +104,6 @@ module.exports = async (deployer, network, accounts) => {
         .approve(dexInstance.address.toString(), initialTokenAmount)
         .send();
       await operation.confirmation();
-
-      operation = await dex.methods
-        .use(
-          "addPair",
-          ordered
-            ? token0Instance.address.toString()
-            : token1Instance.address.toString(),
-          ordered
-            ? token1Instance.address.toString()
-            : token0Instance.address.toString(),
-          initialTokenAmount,
-          initialTokenAmount
-        )
-        .send();
-      await operation.confirmation();
     } else {
       let operation = await token0Instance.methods
         .update_operators([
@@ -150,44 +135,27 @@ module.exports = async (deployer, network, accounts) => {
           .send();
       }
       await operation.confirmation();
-
-      if (standard === "MIXED") {
-        operation = await dex.methods
-          .use(
-            "addPair",
-            ordered
-              ? token0Instance.address.toString()
-              : token1Instance.address.toString(),
-            0,
-            "fa12",
-            ordered
-              ? token1Instance.address.toString()
-              : token0Instance.address.toString(),
-            0,
-            "fa2".initialTokenAmount,
-            initialTokenAmount
-          )
-          .send();
-      } else {
-        operation = await dex.methods
-          .use(
-            "addPair",
-            ordered
-              ? token0Instance.address.toString()
-              : token1Instance.address.toString(),
-            0,
-            standard.toLocaleLowerCase(),
-            ordered
-              ? token1Instance.address.toString()
-              : token0Instance.address.toString(),
-            0,
-            standard.toLocaleLowerCase(),
-            initialTokenAmount,
-            initialTokenAmount
-          )
-          .send();
-      }
-      await operation.confirmation();
     }
+    operation = await dex.methods
+      .use(
+        "addPair",
+        ordered
+          ? token0Instance.address.toString()
+          : token1Instance.address.toString(),
+        0,
+        standard == "MIXED" ? "fa2" : standard.toLocaleLowerCase(),
+        null,
+        ordered
+          ? token1Instance.address.toString()
+          : token0Instance.address.toString(),
+        0,
+        standard == "MIXED" ? "fa12" : standard.toLocaleLowerCase(),
+        null,
+        initialTokenAmount,
+        initialTokenAmount
+      )
+      .send();
+
+    await operation.confirmation();
   }
 };
